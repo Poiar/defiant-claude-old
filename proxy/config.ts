@@ -633,7 +633,7 @@ export function validateConfig(state: ConfigState): string[] {
   return warnings;
 }
 // --- Key resolution with encryption support ---
-// If a key value starts with $aes256gcm:, decrypt it using DEEPCLAUDE_ENCRYPTION_KEY.
+// If a key value starts with $aes256gcm:, decrypt it using DEFIANT_CLAUDE_ENCRYPTION_KEY.
 // Plaintext keys are returned as-is for backwards compatibility.
 
 export async function resolveKey(rawKey: string | null | undefined): Promise<string | null> {
@@ -645,9 +645,9 @@ export async function resolveKey(rawKey: string | null | undefined): Promise<str
     return rawKey;
   }
   const masterSecret =
-    process.env.DEEPCLAUDE_ENCRYPTION_KEY || readWinReg('DEEPCLAUDE_ENCRYPTION_KEY');
+    process.env.DEFIANT_CLAUDE_ENCRYPTION_KEY || readWinReg('DEFIANT_CLAUDE_ENCRYPTION_KEY');
   if (!masterSecret) {
-    log.warn(null, 'Encrypted key found but DEEPCLAUDE_ENCRYPTION_KEY is not set');
+    log.warn(null, 'Encrypted key found but DEFIANT_CLAUDE_ENCRYPTION_KEY is not set');
     return null;
   }
   try {

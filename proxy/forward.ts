@@ -30,8 +30,8 @@ const log = createLogger('forward');
 const upstreamAgent = new http.Agent({ keepAlive: true, keepAliveMsecs: 30000, maxSockets: 25 });
 
 // --- Upstream proxy (Fiddler, mitmproxy, Charles, Burp Suite) ---
-// Set DEEPCLAUDE_UPSTREAM_PROXY=http://127.0.0.1:8888 to route all upstream
-// API calls through a debugging proxy.  Also reads ~/.deepclaude/upstream-proxy.flag
+// Set DEFIANT_CLAUDE_UPSTREAM_PROXY=http://127.0.0.1:8888 to route all upstream
+// API calls through a debugging proxy.  Also reads ~/.defiant-claude/upstream-proxy.flag
 // (first line = proxy URL) so it can be toggled without restarting.
 //
 // HTTPS traffic uses HTTP CONNECT tunneling with a custom agent; HTTP traffic
@@ -48,10 +48,13 @@ function getUpstreamProxyUrl(): string | null {
   if (_upstreamProxyUrl !== undefined) return _upstreamProxyUrl;
 
   // 1. Env var
-  const envUrl = process.env.DEEPCLAUDE_UPSTREAM_PROXY;
+  const envUrl = process.env.DEFIANT_CLAUDE_UPSTREAM_PROXY;
   if (envUrl) {
     _upstreamProxyUrl = envUrl.includes('://') ? envUrl : 'http://' + envUrl;
-    log.info(null, 'Upstream proxy configured via DEEPCLAUDE_UPSTREAM_PROXY: ' + _upstreamProxyUrl);
+    log.info(
+      null,
+      'Upstream proxy configured via DEFIANT_CLAUDE_UPSTREAM_PROXY: ' + _upstreamProxyUrl,
+    );
     return _upstreamProxyUrl;
   }
 
@@ -59,7 +62,7 @@ function getUpstreamProxyUrl(): string | null {
   try {
     const flagPath = path.join(
       process.env.HOME || process.env.USERPROFILE || '.',
-      '.deepclaude',
+      '.defiant-claude',
       'upstream-proxy.flag',
     );
     if (fs.existsSync(flagPath)) {
@@ -197,7 +200,7 @@ function getUpstreamProxyAgents(): { httpAgent: http.Agent; httpsAgent: https.Ag
 // Fiddler, mitmproxy, Charles, and Burp Suite all use their own root CA
 // to decrypt HTTPS.  Node.js must trust this CA to establish TLS through
 // the CONNECT tunnel.  Two mechanisms, in priority order:
-//   1. DEEPCLAUDE_UPSTREAM_PROXY_CA=path/to/cert.pem  (explicit path)
+//   1. DEFIANT_CLAUDE_UPSTREAM_PROXY_CA=path/to/cert.pem  (explicit path)
 //   2. Auto-detect Fiddler cert on Windows: %USERPROFILE%\Documents\Fiddler2\FiddlerRoot.cer
 // The cert is loaded once when the tunnel agent is first created.
 
@@ -209,7 +212,7 @@ function getProxyCaCert(): string | Buffer | undefined {
   _proxyCaLoaded = true;
 
   // 1. Explicit CA cert path
-  const caPath = process.env.DEEPCLAUDE_UPSTREAM_PROXY_CA;
+  const caPath = process.env.DEFIANT_CLAUDE_UPSTREAM_PROXY_CA;
   if (caPath) {
     try {
       if (fs.existsSync(caPath)) {
@@ -292,7 +295,7 @@ export const FIRST_BYTE_TIMEOUT_MS = 15_000;
 // on every data chunk (not just SSE events).
 // Set to 180s (3 min) to accommodate reasoning/thinking models (DeepSeek R1,
 // o1) that can think for 2+ minutes without sending SSE data. Configurable
-// via DEEPCLAUDE_STREAM_HEARTBEAT_MS env var.
+// via DEFIANT_CLAUDE_STREAM_HEARTBEAT_MS env var.
 export const STREAM_HEARTBEAT_MS = 180_000;
 
 // Slot-aware stream timeout overrides. Subagent requests use tighter limits
@@ -307,12 +310,13 @@ function getStreamTimeouts(slot: string | null): {
   bodyRead: number;
 } {
   const defaultHeartbeat =
-    parseInt(process.env.DEEPCLAUDE_STREAM_HEARTBEAT_MS || '', 10) || STREAM_HEARTBEAT_MS;
-  const defaultDeadline = parseInt(process.env.DEEPCLAUDE_STREAM_DEADLINE_MS || '', 10) || 300_000;
+    parseInt(process.env.DEFIANT_CLAUDE_STREAM_HEARTBEAT_MS || '', 10) || STREAM_HEARTBEAT_MS;
+  const defaultDeadline =
+    parseInt(process.env.DEFIANT_CLAUDE_STREAM_DEADLINE_MS || '', 10) || 300_000;
   const subagentHeartbeat =
-    parseInt(process.env.DEEPCLAUDE_SUBAGENT_STREAM_HEARTBEAT_MS || '', 10) || 90_000;
+    parseInt(process.env.DEFIANT_CLAUDE_SUBAGENT_STREAM_HEARTBEAT_MS || '', 10) || 90_000;
   const subagentDeadline =
-    parseInt(process.env.DEEPCLAUDE_SUBAGENT_STREAM_DEADLINE_MS || '', 10) || 90_000;
+    parseInt(process.env.DEFIANT_CLAUDE_SUBAGENT_STREAM_DEADLINE_MS || '', 10) || 90_000;
   if (slot === 'subagent') {
     return {
       firstByte: 10_000, // 10s — subagents shouldn't have cold-start delays

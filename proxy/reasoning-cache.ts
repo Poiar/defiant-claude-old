@@ -11,12 +11,12 @@ import { sessionKey } from './session-key';
 const TTL_MS = 30 * 60 * 1000;
 const MAX_ENTRIES = 1000;
 
-// Persist to ~/.deepclaude/reasoning-cache/ so cached reasoning survives proxy
+// Persist to ~/.defiant-claude/reasoning-cache/ so cached reasoning survives proxy
 // restarts. Without this, kill+resume causes OpenAI-format providers to lose
 // reasoning_content between turns → cache misses.
 const CACHE_DIR = path.join(
-  process.env.DEEPCLAUDE_CONFIG_DIR ||
-    path.join(process.env.HOME || process.env.USERPROFILE || '.', '.deepclaude'),
+  process.env.DEFIANT_CLAUDE_CONFIG_DIR ||
+    path.join(process.env.HOME || process.env.USERPROFILE || '.', '.defiant-claude'),
   'reasoning-cache',
 );
 

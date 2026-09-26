@@ -1,8 +1,8 @@
 #!/usr/bin/env node
 'use strict';
-// DeepClaude unified launcher engine — single source of truth for config
+// Defiant-Claude unified launcher engine — single source of truth for config
 // resolution, routes JSON, slot overrides, thinking overrides, env vars,
-// and display data. Invoked by both deepclaude.ps1 and deepclaude.sh.
+// and display data. Invoked by both defiant-claude.ps1 and defiant-claude.sh.
 
 import {
   readFileSync,
@@ -21,10 +21,10 @@ import { spawnSync } from 'child_process';
 // --- Paths ---
 const SCRIPT_DIR = dirname(fileURLToPath(import.meta.url));
 const HOME = homedir();
-const DEEPCLAUDE_DIR = join(HOME, '.deepclaude');
-const SLOT_OVERRIDES_FILE = join(DEEPCLAUDE_DIR, 'slot-overrides.json');
-const THINKING_OVERRIDES_FILE = join(DEEPCLAUDE_DIR, 'thinking-overrides.json');
-const SUBMODEL_FILE = join(DEEPCLAUDE_DIR, 'subagent-model.json');
+const DEFIANT_CLAUDE_DIR = join(HOME, '.defiant-claude');
+const SLOT_OVERRIDES_FILE = join(DEFIANT_CLAUDE_DIR, 'slot-overrides.json');
+const THINKING_OVERRIDES_FILE = join(DEFIANT_CLAUDE_DIR, 'thinking-overrides.json');
+const SUBMODEL_FILE = join(DEFIANT_CLAUDE_DIR, 'subagent-model.json');
 const REGISTRY_FILE = join(SCRIPT_DIR, 'providers.json');
 const SLOTS = ['opus', 'sonnet', 'haiku', 'subagent', 'fable'];
 
@@ -364,7 +364,7 @@ export function readOverridesFile() {
 }
 
 function writeOverridesFile(data) {
-  mkdirSync(DEEPCLAUDE_DIR, { recursive: true, mode: 0o700 });
+  mkdirSync(DEFIANT_CLAUDE_DIR, { recursive: true, mode: 0o700 });
   writeAtomic(SLOT_OVERRIDES_FILE, JSON.stringify(data));
 }
 
@@ -456,7 +456,7 @@ export function writeThinkingOverrides(noThinking, budget) {
       messages.push(`Thinking: ${budget} token budget for ${m}`);
     }
   }
-  mkdirSync(DEEPCLAUDE_DIR, { recursive: true, mode: 0o700 });
+  mkdirSync(DEFIANT_CLAUDE_DIR, { recursive: true, mode: 0o700 });
   writeAtomic(THINKING_OVERRIDES_FILE, JSON.stringify(overrides));
   return { written: true, overrides, messages };
 }
@@ -476,7 +476,7 @@ function setSubagentModel(model) {
       `Unknown provider '${provKey}'. Known: ${Object.keys(reg.providers).join(', ')}`,
     );
   if (!getKey(provKey)) throw new Error(`No API key set for provider '${provKey}'.`);
-  mkdirSync(DEEPCLAUDE_DIR, { recursive: true, mode: 0o700 });
+  mkdirSync(DEFIANT_CLAUDE_DIR, { recursive: true, mode: 0o700 });
   writeAtomic(SUBMODEL_FILE, JSON.stringify({ providerKey: provKey, modelId }));
   return { set: true, providerKey: provKey, modelId };
 }
@@ -764,7 +764,7 @@ function doctorJson(_configName) {
   // Stale tmps
   let staleTmps = 0;
   try {
-    staleTmps = readdirSync(DEEPCLAUDE_DIR).filter((f) => f.endsWith('.tmp')).length;
+    staleTmps = readdirSync(DEFIANT_CLAUDE_DIR).filter((f) => f.endsWith('.tmp')).length;
   } catch {
     staleTmps = 0;
   }
@@ -801,7 +801,7 @@ function doctorJson(_configName) {
     keys: { configured, total: pkOrder.length, details: keys },
     slots,
     staleTmps,
-    stateDir: DEEPCLAUDE_DIR,
+    stateDir: DEFIANT_CLAUDE_DIR,
   };
 }
 

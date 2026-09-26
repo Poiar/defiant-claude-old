@@ -563,8 +563,8 @@ export async function webSearchStructured(query: string): Promise<SearchResult[]
 
   // Env-controlled engine selection.
   // Default: searxng first (local Docker, fastest), then ddg (free, no key).
-  // Add 'brave' when DEEPCLAUDE_BRAVE_API_KEY is set (2000 free calls/mo).
-  const engines = (envWithRegistry('DEEPCLAUDE_SEARCH_ENGINES') || 'searxng,ddg')
+  // Add 'brave' when DEFIANT_CLAUDE_BRAVE_API_KEY is set (2000 free calls/mo).
+  const engines = (envWithRegistry('DEFIANT_CLAUDE_SEARCH_ENGINES') || 'searxng,ddg')
     .toLowerCase()
     .split(',')
     .map((s) => s.trim());
@@ -592,7 +592,7 @@ export async function webSearchStructured(query: string): Promise<SearchResult[]
 
 /** DDG Lite — POST scraper with GET fallback. */
 async function searchDDG(query: string): Promise<SearchResult[]> {
-  if (process.env.DEEPCLAUDE_SEARCH_NO_NETWORK) {
+  if (process.env.DEFIANT_CLAUDE_SEARCH_NO_NETWORK) {
     return [
       {
         title: `Search: ${query}`,
@@ -614,7 +614,7 @@ async function searchDDG(query: string): Promise<SearchResult[]> {
 /** SearXNG — self-hosted or public instance, JSON API, no key needed.
  *
  *  Priority:
- *  1. DEEPCLAUDE_SEARXNG_URL — self-hosted (e.g. http://localhost:8888/search?format=json&q=)
+ *  1. DEFIANT_CLAUDE_SEARXNG_URL — self-hosted (e.g. http://localhost:8888/search?format=json&q=)
  *     Run `docker run -d -p 8888:8080 searxng/searxng` once, always available, no rate limits.
  *  2. XNG_SEARXNG_INSTANCES — comma-separated fallback URLs
  *  3. Public instance discovery via searx.space (cached 24h)
@@ -623,9 +623,9 @@ async function searchDDG(query: string): Promise<SearchResult[]> {
  *  Total deadline: 8s. First valid JSON response wins.
  */
 async function searchSearXNG(query: string): Promise<SearchResult[]> {
-  if (process.env.DEEPCLAUDE_SEARCH_NO_NETWORK) return [];
+  if (process.env.DEFIANT_CLAUDE_SEARCH_NO_NETWORK) return [];
 
-  const selfHosted = envWithRegistry('DEEPCLAUDE_SEARXNG_URL');
+  const selfHosted = envWithRegistry('DEFIANT_CLAUDE_SEARXNG_URL');
   const fallbackEnv = process.env.XNG_SEARXNG_INSTANCES;
 
   // Build instance list: self-hosted first, then env overrides, then hardcoded.
@@ -709,7 +709,7 @@ async function searchSearXNG(query: string): Promise<SearchResult[]> {
 
   // Try instances sequentially until one returns results.
   // Each has a 3s per-instance timeout; first success returns immediately.
-  // Self-hosted DEEPCLAUDE_SEARXNG_URL is tried first (near-instant when local).
+  // Self-hosted DEFIANT_CLAUDE_SEARXNG_URL is tried first (near-instant when local).
   for (const url of urls.slice(0, 4)) {
     try {
       const result = await fetchOne(url);
@@ -721,10 +721,10 @@ async function searchSearXNG(query: string): Promise<SearchResult[]> {
   return [];
 }
 
-/** Brave Search API — requires DEEPCLAUDE_BRAVE_API_KEY env var, 2000 free calls/month. */
+/** Brave Search API — requires DEFIANT_CLAUDE_BRAVE_API_KEY env var, 2000 free calls/month. */
 async function searchBrave(query: string): Promise<SearchResult[]> {
-  if (process.env.DEEPCLAUDE_SEARCH_NO_NETWORK) return [];
-  const apiKey = envWithRegistry('DEEPCLAUDE_BRAVE_API_KEY');
+  if (process.env.DEFIANT_CLAUDE_SEARCH_NO_NETWORK) return [];
+  const apiKey = envWithRegistry('DEFIANT_CLAUDE_BRAVE_API_KEY');
   if (!apiKey) return [];
 
   try {
@@ -737,7 +737,7 @@ async function searchBrave(query: string): Promise<SearchResult[]> {
         headers: {
           Accept: 'application/json',
           'X-Subscription-Token': apiKey,
-          'User-Agent': 'deepclaude-proxy/1.0',
+          'User-Agent': 'defiant-claude-proxy/1.0',
         },
         signal: controller.signal,
       },
@@ -829,40 +829,44 @@ export async function webSearch(query: string): Promise<string> {
     const result = await new Promise<string>((resolve) => {
       const url = `https://api.duckduckgo.com/?q=${encodeURIComponent(query)}&format=json&no_html=1&no_redirect=1`;
       https
-        .get(url, { headers: { 'User-Agent': 'deepclaude-proxy/1.0' }, timeout: 15000 }, (res) => {
-          let data = '';
-          let dataSize = 0;
-          res.on('data', (chunk: Buffer) => {
-            dataSize += chunk.length;
-            if (dataSize > 5_000_000) {
-              resolve('Search result too large for query: "' + query + '"');
-              res.destroy();
-              return;
-            }
-            data += chunk.toString();
-          });
-          res.on('end', () => {
-            try {
-              const parsed = JSON.parse(data);
-              const results: string[] = [];
-              if (parsed.AbstractText) results.push(parsed.AbstractText);
-              if (parsed.AbstractURL) results.push(`Source: ${parsed.AbstractURL}`);
-              if (parsed.Answer) results.push(`Answer: ${parsed.Answer}`);
-              const topics = parsed.RelatedTopics || [];
-              for (const topic of topics.slice(0, 8)) {
-                if (topic.Text) results.push(`- ${topic.Text}`);
-                if (topic.FirstURL) results.push(`  ${topic.FirstURL}`);
+        .get(
+          url,
+          { headers: { 'User-Agent': 'defiant-claude-proxy/1.0' }, timeout: 15000 },
+          (res) => {
+            let data = '';
+            let dataSize = 0;
+            res.on('data', (chunk: Buffer) => {
+              dataSize += chunk.length;
+              if (dataSize > 5_000_000) {
+                resolve('Search result too large for query: "' + query + '"');
+                res.destroy();
+                return;
               }
-              const text = results.join('\n') || `No results found for query: "${query}"`;
-              resolve(text);
-            } catch {
-              resolve(`Search completed but results could not be parsed for: "${query}"`);
-            }
-          });
-          res.on('error', (err: Error) => {
-            resolve(`Web search failed: ${err.message}. Query was: "${query}"`);
-          });
-        })
+              data += chunk.toString();
+            });
+            res.on('end', () => {
+              try {
+                const parsed = JSON.parse(data);
+                const results: string[] = [];
+                if (parsed.AbstractText) results.push(parsed.AbstractText);
+                if (parsed.AbstractURL) results.push(`Source: ${parsed.AbstractURL}`);
+                if (parsed.Answer) results.push(`Answer: ${parsed.Answer}`);
+                const topics = parsed.RelatedTopics || [];
+                for (const topic of topics.slice(0, 8)) {
+                  if (topic.Text) results.push(`- ${topic.Text}`);
+                  if (topic.FirstURL) results.push(`  ${topic.FirstURL}`);
+                }
+                const text = results.join('\n') || `No results found for query: "${query}"`;
+                resolve(text);
+              } catch {
+                resolve(`Search completed but results could not be parsed for: "${query}"`);
+              }
+            });
+            res.on('error', (err: Error) => {
+              resolve(`Web search failed: ${err.message}. Query was: "${query}"`);
+            });
+          },
+        )
         .on('error', (err: Error) => {
           resolve(`Web search failed: ${err.message}. Query was: "${query}"`);
         })
@@ -912,7 +916,7 @@ async function tryAddress(
     port: parsedUrl.port ? parseInt(parsedUrl.port, 10) : isHttps ? 443 : 80,
     path: parsedUrl.pathname + parsedUrl.search || '/',
     method: 'GET',
-    headers: { 'User-Agent': 'deepclaude-proxy/1.0' },
+    headers: { 'User-Agent': 'defiant-claude-proxy/1.0' },
     timeout: 20000,
     lookup(_hostname, _opts, callback) {
       callback(null, address, family);

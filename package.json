@@ -1,5 +1,5 @@
 {
-  "name": "deepclaude",
+  "name": "defiant-claude",
   "version": "1.0.0",
   "description": "Provider-agnostic Claude Code wrapper — route each model slot to a different provider",
   "private": true,
@@ -7,13 +7,13 @@
     "node": ">=18"
   },
   "bin": {
-    "deepclaude": "deepclaude.sh"
+    "defiant-claude": "defiant-claude.sh"
   },
   "scripts": {
-    "lint": "pwsh -c \"Invoke-ScriptAnalyzer -Path deepclaude.ps1\" && npx eslint proxy/ --max-warnings 0 && wsl bash -c \"echo 'testtest' | sudo -S shellcheck /mnt/c/OC/deepclaude/deepclaude.sh\"",
+    "lint": "pwsh -c \"Invoke-ScriptAnalyzer -Path defiant-claude.ps1\" && npx eslint proxy/ --max-warnings 0 && wsl bash -c \"echo 'testtest' | sudo -S shellcheck /mnt/c/OC/defiant-claude/defiant-claude.sh\"",
     "test": "jest proxy/__tests__ --no-coverage",
     "test:coverage": "jest proxy/__tests__ --coverage",
-    "doctor": "pwsh deepclaude.ps1 --doctor",
+    "doctor": "pwsh defiant-claude.ps1 --doctor",
     "start": "npx tsx proxy/start-proxy.ts",
     "start:ts": "npx tsx proxy/start-proxy.ts",
     "build:readme": "npx tsx scripts/build-readme.ts",
@@ -26,7 +26,7 @@
   },
   "repository": {
     "type": "git",
-    "url": "https://github.com/Poiar/deepclaude"
+    "url": "https://github.com/Poiar/defiant-claude"
   },
   "keywords": [
     "claude-code",

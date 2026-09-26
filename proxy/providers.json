@@ -19,8 +19,8 @@
       "wireFormat": "openai",
       "setupUrl": "https://openrouter.ai/keys",
       "extraHeaders": {
-        "HTTP-Referer": "https://github.com/Poiar/deepclaude",
-        "X-Title": "deepclaude"
+        "HTTP-Referer": "https://github.com/Poiar/defiant-claude",
+        "X-Title": "defiant-claude"
       },
       "streamUsageReporting": "openai_stream_options"
     },
